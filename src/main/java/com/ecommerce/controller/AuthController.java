@@ -69,6 +69,7 @@ public class AuthController {
                 response.put("token", token);  // ← Token bhejo
                 response.put("userId", user.getId());
                 response.put("username", user.getUsername());
+                response.put("role", user.getRole().toString());
                 
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }

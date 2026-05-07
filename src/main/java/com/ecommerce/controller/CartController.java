@@ -1,5 +1,5 @@
 package com.ecommerce.controller;
-
+import java.util.Map;
 import com.ecommerce.model.Cart;
 import com.ecommerce.repository.CartRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,5 +51,14 @@ public class CartController {
         List<Cart> items = cartRepository.findByUserId(userId);
         cartRepository.deleteAll(items);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+ // UPDATE CART QUANTITY
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateCartItem(@PathVariable Long id, @RequestBody Cart cartDetails) {
+        return cartRepository.findById(id).map(cart -> {
+            cart.setQuantity(cartDetails.getQuantity());
+            cartRepository.save(cart);
+            return new ResponseEntity<>(cart, HttpStatus.OK);
+        }).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }
