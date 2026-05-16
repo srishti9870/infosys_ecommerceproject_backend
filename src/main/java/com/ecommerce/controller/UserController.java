@@ -1,20 +1,32 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.model.User;
+import com.ecommerce.repository.UserRepository;
 import com.ecommerce.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import java.util.Optional;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class UserController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     // POST - Create User
     @PostMapping
@@ -50,5 +62,53 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    // ========== PROFILE UPDATE ==========
+    @PutMapping("/profile/{id}")
+    public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+        
+        User user = userOpt.get();
+        if (body.containsKey("fullName")) {
+            user.setFullName(body.get("fullName"));
+        }
+        if (body.containsKey("email")) {
+            user.setEmail(body.get("email"));
+        }
+        userRepository.save(user);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Profile updated!");
+        response.put("username", user.getUsername());
+        response.put("email", user.getEmail());
+        response.put("fullName", user.getFullName());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    // ========== PASSWORD UPDATE ==========
+    @PutMapping("/password/{id}")
+    public ResponseEntity<?> updatePassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+        
+        User user = userOpt.get();
+        String oldPassword = body.get("oldPassword");
+        String newPassword = body.get("newPassword");
+        
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            return new ResponseEntity<>("Current password is incorrect", HttpStatus.BAD_REQUEST);
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            return new ResponseEntity<>("Password must be at least 6 characters", HttpStatus.BAD_REQUEST);
+        }
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return new ResponseEntity<>("Password updated!", HttpStatus.OK);
     }
 }

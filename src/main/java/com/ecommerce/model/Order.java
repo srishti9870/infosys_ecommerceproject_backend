@@ -1,5 +1,5 @@
 package com.ecommerce.model;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,6 +34,7 @@ public class Order {
 
     // Relationship with OrderItems
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonIgnoreProperties("order")
     private List<OrderItem> items = new ArrayList<>();
 
     // ====== Getters & Setters ======

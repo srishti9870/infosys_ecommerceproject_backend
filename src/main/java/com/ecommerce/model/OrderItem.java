@@ -1,6 +1,7 @@
 package com.ecommerce.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 
 @Entity
@@ -17,6 +18,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
+    @JsonIgnoreProperties("items")
     private Product product;
 
     @Column(nullable = false)
