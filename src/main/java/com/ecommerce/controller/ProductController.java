@@ -6,9 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Pageable;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -27,34 +33,31 @@ public class ProductController {
 
     // ========== GET ALL PRODUCTS (with search/filter) ==========
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts(
+    public ResponseEntity<Map<String, Object>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice) {
+            @RequestParam(required = false) String category) {
 
-        List<Product> products;
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> productPage;
 
-        // Search by keyword
         if (keyword != null && !keyword.isEmpty()) {
-            products = productRepository.findByNameContainingIgnoreCase(keyword);
-        }
-        // Filter by category
-        else if (category != null && !category.isEmpty()) {
-            products = productRepository.findByCategory(category);
-        }
-        // Filter by price range
-        else if (minPrice != null && maxPrice != null) {
-            products = productRepository.findByPriceBetween(minPrice, maxPrice);
-        }
-        // No filter - get all
-        else {
-            products = productRepository.findAll();
+            productPage = productRepository.findByNameContainingIgnoreCase(keyword, pageable);
+        } else if (category != null && !category.isEmpty()) {
+            productPage = productRepository.findByCategory(category, pageable);
+        } else {
+            productPage = productRepository.findAll(pageable);
         }
 
-        return new ResponseEntity<>(products, HttpStatus.OK);
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productPage.getContent());
+        response.put("currentPage", productPage.getNumber());
+        response.put("totalPages", productPage.getTotalPages());
+        response.put("totalItems", productPage.getTotalElements());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
     // ========== GET PRODUCT BY ID ==========
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
